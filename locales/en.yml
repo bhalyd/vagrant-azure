@@ -23,7 +23,11 @@ en:
     stopping: |-
       VM '%{name}' is stopping
     stopped: |-
-      VM '%{name}' has been stopped
+      VM '%{name}' has been stopped - you will continue to incur charges on this VM.
+    deallocating: |-
+      VM '%{name}' is being deallocated
+    deallocated: |-
+      VM '%{name}' has been deallocated - you will not be charged while the VM is in this state.
     restarting: |-
       VM '%{name}' is restarting
     restarted: |-
@@ -53,6 +57,8 @@ en:
         Failed to start VM '%{name}'!!
       failed_stopping: |-
         Failed to stopping VM '%{name}'!!
+      failed_deallocating: |-
+        Failed to deallocate VM '%{name}'!!
     subscription_id:
       required: |-
         You must provide an Azure Subscription Id either through ENV['AZURE_SUBSCRIPTION_ID'] or via Vagrantfile.
@@ -106,3 +112,5 @@ en:
       Waiting for instance to become "ready"...
     waiting_for_stop: |-
       Waiting for instance to become "stopped"...
+    waiting_for_deallocation: |-
+      Waiting for instance to become "deallocated"...

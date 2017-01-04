@@ -12,8 +12,10 @@ module VagrantPlugins
       # Include the built-in modules so we can use them as top-level things.
       include Vagrant::Action::Builtin
 
-      # This action is called to halt the remote machine.
-      def self.action_halt
+      # This action is called to suspend the remote machine.
+      # You will continue to be billed for instances that are halted.
+      # Use vagrant halt to deallocate an instance.
+      def self.action_suspend
         Vagrant::Action::Builder.new.tap do |b|
           b.use ConfigValidate
           b.use Call, IsCreated do |env, b2|
@@ -24,6 +26,23 @@ module VagrantPlugins
 
             b2.use ConnectAzure
             b2.use StopInstance
+          end
+        end
+      end
+
+      # This action is called to halt the remote machine.
+      # this will deallocate the instance.
+      def self.action_halt
+        Vagrant::Action::Builder.new.tap do |b|
+          b.use ConfigValidate
+          b.use Call, IsCreated do |env, b2|
+            unless env[:result]
+              b2.use MessageNotCreated
+              next
+            end
+
+            b2.use ConnectAzure
+            b2.use DeallocateInstance
           end
         end
       end
@@ -183,6 +202,7 @@ module VagrantPlugins
       autoload :RunInstance, action_root.join('run_instance')
       autoload :StartInstance, action_root.join('start_instance')
       autoload :StopInstance, action_root.join('stop_instance')
+      autoload :DeallocateInstance, action_root.join('deallocate_instance')
       autoload :TerminateInstance, action_root.join('terminate_instance')
       autoload :TimedProvision, action_root.join('timed_provision')
       autoload :WaitForState, action_root.join('wait_for_state')

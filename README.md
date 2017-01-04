@@ -1,8 +1,10 @@
 # Vagrant Azure Provider
 
-[![Gem Version](https://badge.fury.io/rb/vagrant-azure.png)](https://rubygems.org/gems/vagrant-azure)
+[![Official Gem Version](https://badge.fury.io/rb/vagrant-azure.png)](https://rubygems.org/gems/vagrant-azure)
 
-This is a [Vagrant](http://www.vagrantup.com) 1.7.3+ plugin that adds [Microsoft Azure](https://azure.microsoft.com)
+This is a fork of the vagrant-azure plugin pulled from https://github.com/Azure/vagrant-azure/pull/134
+
+This is a [Vagrant](http://www.vagrantup.com) 1.9.1+ plugin that adds [Microsoft Azure](https://azure.microsoft.com)
 provider to Vagrant, allowing Vagrant to control and provision machines in Microsoft Azure.
 
 ## Usage
@@ -12,7 +14,7 @@ provider to Vagrant, allowing Vagrant to control and provision machines in Micro
 Install the vagrant-azure plugin using the standard Vagrant 1.1+ installation methods. After installing the plugin, you can ```vagrant up``` and use ```azure``` provider. For example:
 
 ```
-vagrant plugin install vagrant-azure --plugin-version '2.0.0.pre1' --plugin-prerelease
+vagrant plugin install vagrant-azure --plugin-version '2.0.1' --plugin-prerelease
 ...
 vagrant up --provider=azure
 ...
