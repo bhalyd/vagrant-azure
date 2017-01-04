@@ -11,13 +11,16 @@ provider to Vagrant, allowing Vagrant to control and provision machines in Micro
 
 [Download Vagrant](http://www.vagrantup.com/downloads.html)
 
+@TODO: This plugin hasn't been released yet, so you'll need to download and build the plugin manually..
+
+
 Install the vagrant-azure plugin using the standard Vagrant 1.1+ installation methods. After installing the plugin, you can ```vagrant up``` and use ```azure``` provider. For example:
 
-```
-vagrant plugin install vagrant-azure --plugin-version '2.0.1' --plugin-prerelease
-...
-vagrant up --provider=azure
-...
+```ruby
+#vagrant plugin install vagrant-azure --plugin-version '2.0.1' --plugin-prerelease
+#...
+#vagrant up --provider=azure
+#...
 ```
 
 You'll need an ```azure``` box before you can do ```vagrant up``` though.
