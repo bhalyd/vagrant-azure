@@ -6,6 +6,8 @@ require 'azure_mgmt_resources'
 require 'azure_mgmt_compute'
 require 'azure_mgmt_network'
 require 'azure_mgmt_storage'
+require 'vagrant-azure/services/blobclient'
+
 
 module VagrantPlugins
   module Azure
@@ -61,7 +63,15 @@ module VagrantPlugins
         # @return [Azure::ARM::Storage::StorageManagementClient]
         def storage
           build(::Azure::ARM::Storage::StorageManagementClient)
+          #build(::VagrantPlugins::Azure::Services::StorageManagementClientExtended)
         end
+
+        # Azure Resource Manager Storage API Client
+        # @return [Azure::ARM::Storage::StorageManagementClient]
+        def blobs
+          build(::VagrantPlugins::Azure::Services::BlobClient)
+        end
+
 
         private
 

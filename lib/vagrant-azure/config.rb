@@ -93,6 +93,37 @@ module VagrantPlugins
       # @return [String]
       attr_accessor :endpoint
 
+      # (Optional) the name of a custom_vhd_name
+      #
+      # @return [String]
+      attr_accessor :use_custom_vhd
+
+      # (Optional) the name of a custom_vhd_name
+      #
+      # @return [String]
+      attr_accessor :storage_account
+
+      # (Optional) the name of a custom_vhd_name
+      #
+      # @return [String]
+      attr_accessor :container_name
+
+      # (Optional) the name of a custom_vhd_name
+      #
+      # @return [String]
+      attr_accessor :vhd_name
+
+      # (Optional) the name of a pre-exising network resource group
+      # @return [String]
+      attr_accessor :network_resource_group
+
+      # (Optional) set to nil if you want to skip a public ip address
+      # @return [String]
+      attr_accessor :public_ip_name
+
+
+
+
       def initialize
         @tenant_id = UNSET_VALUE
         @client_id = UNSET_VALUE
@@ -104,13 +135,21 @@ module VagrantPlugins
         @vm_name = UNSET_VALUE
         @vm_password = UNSET_VALUE
         @vm_image_urn = UNSET_VALUE
-        @virtual_network_name = UNSET_VALUE
-        @subnet_name = UNSET_VALUE
-        @tcp_endpoints = UNSET_VALUE
         @vm_size = UNSET_VALUE
         @availability_set_name = UNSET_VALUE
         @instance_ready_timeout = UNSET_VALUE
         @instance_check_interval = UNSET_VALUE
+        @use_custom_vhd = false
+        @storage_account = UNSET_VALUE
+        @container_name = UNSET_VALUE
+        @vhd_name = UNSET_VALUE
+
+        # networking related variables.
+        @subnet_name = UNSET_VALUE
+        @tcp_endpoints = UNSET_VALUE
+        @virtual_network_name = UNSET_VALUE
+        @network_resource_group = UNSET_VALUE
+        @public_ip_name = true
       end
 
       def finalize!
@@ -133,6 +172,12 @@ module VagrantPlugins
 
         @instance_ready_timeout = 120 if @instance_ready_timeout == UNSET_VALUE
         @instance_check_interval = 2 if @instance_check_interval == UNSET_VALUE
+
+        @use_custom_vhd = false if @use_custom_vhd == UNSET_VALUE
+        @storage_account = nil if @storage_account == UNSET_VALUE
+        @container_name = 'system' if @container_name == UNSET_VALUE
+        @vhd_name = nil if @vhd_name == UNSET_VALUE
+
       end
 
       def validate(machine)
@@ -145,6 +190,7 @@ module VagrantPlugins
 
         { 'Microsoft Azure Provider' => errors }
       end
+
     end
   end
 end

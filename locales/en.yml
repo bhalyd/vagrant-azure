@@ -59,6 +59,8 @@ en:
         Failed to stopping VM '%{name}'!!
       failed_deallocating: |-
         Failed to deallocate VM '%{name}'!!
+      conflicting_images: |-
+        Both a custom_vhd_name and image_urn have been provided. Only one or the other can be used in the Vagrantfile
     subscription_id:
       required: |-
         You must provide an Azure Subscription Id either through ENV['AZURE_SUBSCRIPTION_ID'] or via Vagrantfile.

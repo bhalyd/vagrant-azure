@@ -4,6 +4,7 @@
 require 'log4r'
 require 'json'
 require 'azure_mgmt_resources'
+require 'azure_mgmt_network'
 require 'vagrant/util/template_renderer'
 require 'vagrant-azure/util/timer'
 require 'vagrant-azure/util/machine_id_helper'
@@ -41,12 +42,20 @@ module VagrantPlugins
           subnet_name               = config.subnet_name
           tcp_endpoints             = config.tcp_endpoints
           availability_set_name     = config.availability_set_name
+          use_custom_vhd            = config.use_custom_vhd
+          storage_account           = config.storage_account
+          container_name            = config.container_name
+          vhd_name                  = config.vhd_name
+          network_rg                = config.network_resource_group ? (config.network_resource_group) : (config.resource_group_name)
+          public_ip_name            = config.public_ip_name
 
           # Launch!
           env[:ui].info(I18n.t('vagrant_azure.launching_instance'))
+          env[:ui].info(" -- This is a custom VHD image setup!!!! ") if use_custom_vhd
+
           env[:ui].info(" -- Management Endpoint: #{endpoint}")
           env[:ui].info(" -- Subscription Id: #{config.subscription_id}")
-          env[:ui].info(" -- Resource Group Name: #{resource_group_name}")
+          env[:ui].info(" -- Primary Resource Group Name: #{resource_group_name}")
           env[:ui].info(" -- Location: #{location}")
           env[:ui].info(" -- Admin User Name: #{admin_user_name}") if admin_user_name
           env[:ui].info(" -- VM Name: #{vm_name}")
@@ -56,15 +65,29 @@ module VagrantPlugins
           env[:ui].info(" -- Subnet Name: #{subnet_name}") if subnet_name
           env[:ui].info(" -- TCP Endpoints: #{tcp_endpoints}") if tcp_endpoints
           env[:ui].info(" -- Availability Set Name: #{availability_set_name}") if availability_set_name
+          env[:ui].info(" -- Network Resource Group: #{network_rg}")
+          env[:ui].info(" -- This VM will __NOT__ have a public ip address.") if !public_ip_name
 
-          image_publisher, image_offer, image_sku, image_version = vm_image_urn.split(':')
+          # @todo - add in logging for custom vhd work
 
           azure = env[:azure_arm_service]
           image_details = nil
-          env[:metrics]['get_image_details'] = Util::Timer.time do
-            image_details = get_image_details(azure, location, image_publisher, image_offer, image_sku, image_version)
+          image_publisher = nil
+          image_offer = nil
+          image_sku = nil
+          image_version = nil
+
+          if use_custom_vhd
+            env[:ui].info( "Using a custom VHD image.")
+          else
+            image_publisher, image_offer, image_sku, image_version = vm_image_urn.split(':')
+            env[:metrics]['get_image_details'] = Util::Timer.time do
+              image_details = get_image_details(azure, location, image_publisher, image_offer, image_sku, image_version)
+            end
+            @logger.info("Time to fetch os image details: #{env[:metrics]['get_image_details']}")
           end
-          @logger.info("Time to fetch os image details: #{env[:metrics]['get_image_details']}")
+
+
 
           deployment_params = {
             adminUserName:        admin_user_name,
@@ -76,7 +99,11 @@ module VagrantPlugins
             imageSku:             image_sku,
             imageVersion:         image_version,
             subnetName:           subnet_name,
-            virtualNetworkName:   virtual_network_name
+            virtualNetworkName:   virtual_network_name,
+            userStorageAccountName:       storage_account,
+            userStorageContainerName:        container_name,
+            userVhdName:              vhd_name,
+            networkResourceGroup: network_rg
           }
 
           if get_image_os(image_details) != 'Windows'
@@ -90,9 +117,14 @@ module VagrantPlugins
             deployment_params.merge!(sshKeyData: File.read(paths_to_pub.first))
           end
 
+
           template_params = {
-              operating_system:   get_image_os(image_details)
+              operating_system:   get_image_os(image_details),
+              use_custom_vhd: use_custom_vhd,
+              public_ip_name: public_ip_name,
+              create_virtual_network: !virtual_network_exists( azure, network_rg, virtual_network_name )
           }
+
 
           env[:ui].info(" -- Create or Update of Resource Group: #{resource_group_name}")
           env[:metrics]['put_resource_group'] = Util::Timer.time do
@@ -147,20 +179,24 @@ module VagrantPlugins
         end
 
         def get_image_os(image_details)
-          image_details.properties.os_disk_image.operating_system
+          if image_details
+            image_details.properties.os_disk_image.operating_system
+          else
+            "Linux"
+          end
         end
 
         def get_image_details(azure, location, publisher, offer, sku, version)
           if version == 'latest'
-            latest = azure.compute.virtual_machine_images.list(location, publisher, offer, sku).value!.body.last
-            azure.compute.virtual_machine_images.get(location, publisher, offer, sku, latest.name).value!.body
+            latest = azure.compute.virtual_machine_images.list(location, publisher, offer, sku).last
+            azure.compute.virtual_machine_images.get(location, publisher, offer, sku, latest.name)
           else
-            azure.compute.virtual_machine_images.get(location, publisher, offer, sku, version).value!.body
+            azure.compute.virtual_machine_images.get(location, publisher, offer, sku, version)
           end
         end
 
         def put_deployment(azure, rg_name, params)
-          azure.resources.deployments.create_or_update(rg_name, 'vagrant', params).value!.body
+          azure.resources.deployments.create_or_update(rg_name, 'vagrant', params)
         end
 
         def put_resource_group(azure, name, location)
@@ -168,7 +204,7 @@ module VagrantPlugins
             rg.location = location
           end
 
-          azure.resources.resource_groups.create_or_update(name, params).value!.body
+          azure.resources.resource_groups.create_or_update(name, params)
         end
 
         # This method generates the deployment template
@@ -201,6 +237,12 @@ module VagrantPlugins
           destroy_env[:force_confirm_destroy] = true
           env[:action_runner].run(Action.action_destroy, destroy_env)
         end
+
+        def virtual_network_exists( azure, network_rg, virtual_network_name )
+          !azure.network.virtual_networks.get( network_rg, virtual_network_name ).nil?
+        end
+
+
       end
     end
   end

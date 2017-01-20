@@ -4,7 +4,7 @@
 
 source 'https://rubygems.org'
 
-#gemspec
+gemspec
 
 group :development do
   # We depend on Vagrant for development, but we don't add it as a

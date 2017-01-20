@@ -24,9 +24,14 @@ module VagrantPlugins
         def read_ssh_info(azure, env)
           return nil if env[:machine].id.nil?
           parsed = parse_machine_id(env[:machine].id)
-          public_ip = azure.network.public_ipaddresses.get(parsed[:group], "#{parsed[:name]}-vagrantPublicIP").value!.body
 
-          {:host => public_ip.properties.dns_settings.fqdn, :port => 22}
+          begin
+            public_ip = azure.network.public_ipaddresses.get(parsed[:group], "#{parsed[:name]}-vagrantPublicIP")
+            {:host => public_ip.properties.dns_settings.fqdn, :port => 22}
+          rescue MsRestAzure::AzureOperationError => ex
+            nic = azure.network.network_interfaces.get(parsed[:group], "#{parsed[:name]}-vagrantNIC")
+            {:host => nic.ip_configurations.first.private_ipaddress, :port => 22}
+          end
         end
       end
     end

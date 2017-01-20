@@ -1,5 +1,5 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json",
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json",
   "contentVersion": "1.0.0.0",
   "parameters": {
     "adminUserName": {
@@ -42,6 +42,28 @@
         "description": "Name of the VM"
       }
     },
+    <% if use_custom_vhd %>
+    "userStorageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "This is the name of the your storage account"
+      }
+    },
+    "userStorageContainerName": {
+      "type": "string",
+      "metadata": {
+        "description": "This is the name of the container in your storage account"
+      }
+    },
+    "userVhdName": {
+      "type": "string",
+      "metadata": {
+        "description": "This is the name of the your customized VHD"
+      }
+    },
+    <% end %>
+    <% if !use_custom_vhd %>
+
     "imagePublisher": {
       "type": "string",
       "defaultValue": "canonical",
@@ -70,6 +92,7 @@
         "description": "Name of the image sku"
       }
     },
+    <% end %>
     "subnetName": {
       "type": "string",
       "defaultValue": "vagrant-subnet",
@@ -82,6 +105,13 @@
       "defaultValue": "vagrantVNET",
       "metadata": {
         "description": "Name of the virtual network"
+      }
+    },
+    "networkResourceGroup":{
+      "type": "string",
+      "defaultValue": "resourceGroup().id",
+      "metadata": {
+        "description": "Name of the virtual network resource group"
       }
     }
   },
@@ -98,7 +128,7 @@
     "storageAccountType": "Standard_LRS",
     "networkSecurityGroupName": "[concat(parameters('vmName'), '-vagrantNSG')]",
     "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+    "vnetID": "[resourceId(parameters('networkResourceGroup'),'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',parameters('subnetName'))]",
     "apiVersion": "2015-06-15"
   },
@@ -136,6 +166,8 @@
         ]
       }
     },
+
+<% if public_ip_name %>
     {
       "apiVersion": "[variables('apiVersion')]",
       "type": "Microsoft.Network/publicIPAddresses",
@@ -148,6 +180,8 @@
         }
       }
     },
+<% end %>
+<% if create_virtual_network %>
     {
       "apiVersion": "[variables('apiVersion')]",
       "type": "Microsoft.Network/virtualNetworks",
@@ -175,14 +209,19 @@
         ]
       }
     },
+<% end %>
     {
       "apiVersion": "[variables('apiVersion')]",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[variables('nicName')]",
       "location": "[variables('location')]",
       "dependsOn": [
+<% if public_ip_name %>
         "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+<% end %>
+<% if create_virtual_network %>
         "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]"
+<% end %>
       ],
       "properties": {
         "ipConfigurations": [
@@ -190,9 +229,11 @@
             "name": "ipconfig1",
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
+<% if public_ip_name %>
               "publicIPAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
               },
+<% end %>
               "subnet": {
                 "id": "[variables('subnetRef')]"
               }
@@ -229,6 +270,7 @@
             }
           }
         },
+<% if !use_custom_vhd %>
         "storageProfile": {
           "imageReference": {
             "publisher": "[parameters('imagePublisher')]",
@@ -245,6 +287,23 @@
             "createOption": "FromImage"
           }
         },
+<% end %>
+<% if use_custom_vhd %>
+        "storageProfile": {
+          "osDisk": {
+            "name": "[concat(parameters('vmName'), '-osdisk')]",
+            "osType": "Linux",
+            "vhd": {
+              "uri": "[concat('http://',parameters('userStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/', variables('osDiskName'),'.vhd')]"
+            },
+            "image": {
+              "uri": "[concat('http://',parameters('userStorageAccountName'),'.blob.core.windows.net/',parameters('userStorageContainerName'),'/', parameters('userVhdName'),'.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+<% end %>
         "networkProfile": {
           "networkInterfaces": [
             {
